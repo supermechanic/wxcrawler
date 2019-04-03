@@ -29,10 +29,8 @@ def newRedisConn(host="127.0.0.1", port=6379):
 def getRedisConn():
     return r
 
-# 获取cookie
 
-
-def get_cookies():
+def get_cookies():  # 获取cookie
     chrome_obj = webdriver.Chrome()
     chrome_obj.get("http://weixin.sogou.com/")
 
