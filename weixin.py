@@ -1,8 +1,22 @@
 # -*- coding: UTF-8 -*-
+from selenium import webdriver
 from http import cookiejar
 from urllib import parse
 from urllib import request
+from bs4 import BeautifulSoup
 import redis
+import time
+
+
+header = {
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Encoding': 'gzip, deflate',
+    'Accept-Language': 'zh-CN,zh;q=0.9',
+    'Connection': 'keep-alive',
+    'Host': 'weixin.sogou.com',
+    'Upgrade-Insecure-Requests': '1',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
+}
 
 global r
 r = newRedisConn()
@@ -14,6 +28,21 @@ def newRedisConn(host="127.0.0.1", port=6379):
 
 def getRedisConn():
     return r
+
+# 获取cookie
+
+
+def get_cookies():
+    chrome_obj = webdriver.Chrome()
+    chrome_obj.get("http://weixin.sogou.com/")
+
+    chrome_obj.find_element_by_xpath('//*[@id="loginBtn"]').click()
+    time.sleep(10)
+    cookies = chrome_obj.get_cookies()
+    cookie = {}
+    for items in cookies:
+        cookie[items.get('name')] = items.get('value')
+    return cookie
 
 
 def Json2WXAccount(info):
@@ -77,17 +106,24 @@ class WXAccountsSpider:
         return url
 
     def getTotalPage(self, url):
-        request.urlopen()
-        return 2
+        pageSource = request.urlopen(url)
+        bsObj = BeautifulSoup(
+            str(pageSource, encoding="utf-8"), "html.parser")
+        itemCountText = bsObj.find("div", {"class": "mun"}).text
+        pattern = re.compile(r'\d+')
+        itemCount = pattern.findall(itemCountText.replace(",", ""))[0]
+        pageCount = int(int(itemCount)/10)
+        return pageCount
 
-    def run(self):
-        for keyWord in self.keys:
-            page1 = self.genUrl(keyWord, 1)  # 获取第一页
-            count = self.getTotalPage(page1)
-            if (count < 2):
-                continue
-            for i in range(2, count):
-                self.genUrl(keyWord, i)
+
+def run(self):
+    for keyWord in self.keys:
+        page1 = self.genUrl(keyWord, 1)  # 获取第一页
+        count = self.getTotalPage(page1)
+        if (count < 2):
+            continue
+        for i in range(2, count):
+            self.genUrl(keyWord, i)
 
 
 class AccountsDownloader:
@@ -96,6 +132,9 @@ class AccountsDownloader:
 
 class ArticlesDownloader:
     pass
+
+
+def main(keys):
 
 
 if __name__ == "__main__":
