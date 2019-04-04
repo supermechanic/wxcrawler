@@ -4,9 +4,12 @@ from http import cookiejar
 from urllib import parse
 from urllib import request
 from bs4 import BeautifulSoup
+import re
 import redis
 import time
-
+import ip_pool
+import cookie_pool
+import requests
 
 header = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
@@ -30,19 +33,6 @@ def getRedisConn():
     return r
 
 
-def get_cookies():  # 获取cookie
-    chrome_obj = webdriver.Chrome()
-    chrome_obj.get("http://weixin.sogou.com/")
-
-    chrome_obj.find_element_by_xpath('//*[@id="loginBtn"]').click()
-    time.sleep(10)
-    cookies = chrome_obj.get_cookies()
-    cookie = {}
-    for items in cookies:
-        cookie[items.get('name')] = items.get('value')
-    return cookie
-
-
 def Json2WXAccount(info):
     return WXAccount(wxid=info["wxid"], authName=info["authName"], description=info["description"])
 
@@ -61,24 +51,15 @@ class WXAccount:
         }
 
 
-class CookiesPool:
-    def __init__(self):
-        pass
-
-    def getCookie(self):
-        pass
-
-    def addCookie(self, cookie):
-        pass
-
-
 class WXAccountsSpider:
     urlCount = 0
+    # 获取URL列表只通过，一个cookie，不使用代理，不加cookie只显示10页内容
 
-    def __init__(self, keys):
+    def __init__(self, keys, cookie):
         self.name = "微信爬虫"
         self.keys = keys
         self.urlListKey = "urls"
+        self.cookie = cookie
         self.reqParam = {
             "query": "",  # 搜索关键词
             "_sug": "n",
@@ -104,7 +85,8 @@ class WXAccountsSpider:
         return url
 
     def getTotalPage(self, url):
-        pageSource = request.urlopen(url)
+        pageSource = requests.get(url, cookies=self.cookie,
+                                  headers=header).content
         bsObj = BeautifulSoup(
             str(pageSource, encoding="utf-8"), "html.parser")
         itemCountText = bsObj.find("div", {"class": "mun"}).text
@@ -113,18 +95,18 @@ class WXAccountsSpider:
         pageCount = int(int(itemCount)/10)
         return pageCount
 
-
-def run(self):
-    for keyWord in self.keys:
-        page1 = self.genUrl(keyWord, 1)  # 获取第一页
-        count = self.getTotalPage(page1)
-        if (count < 2):
-            continue
-        for i in range(2, count):
-            self.genUrl(keyWord, i)
+    def run(self):
+        for keyWord in self.keys:
+            page1 = self.genUrl(keyWord, 1)  # 获取第一页
+            count = self.getTotalPage(page1)
+            if (count < 2):
+                continue
+            for i in range(2, count):
+                self.genUrl(keyWord, i)
 
 
 class AccountsDownloader:
+    # 从redis读取url message queue
     pass
 
 
@@ -133,7 +115,15 @@ class ArticlesDownloader:
 
 
 def main(keys):
+    pool = cookie_pool.CookiesPool()
+    i = 0
+    while i < 2:
+        pool.genCookie()
+        i += 1
+    spider = WXAccountsSpider(keys, pool.get_one_cookie())  # 暂时只使用一个spider
+    spider.run()
 
 
 if __name__ == "__main__":
     key_list = ["女性", "美妆", "时尚", "女性健康", "穿搭", "星座"]
+    main(key_list)
