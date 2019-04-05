@@ -106,24 +106,48 @@ class WXAccountsSpider:
 
 
 class AccountsDownloader:
+    req_count = 0
     # 从redis读取url message queue
-    pass
+    def __init__(self, cookie_pool, proxy_pool):
+        self.url_key = "urls"
+        self.cookie_pool = cookie_pool
+        self.proxy_pool = proxy_pool
 
+    def get_page_source(self, url):
+        page_source = requests.get(url, cookies=self.current_cookie,
+                                  proxies=self.current_proxy, headers=header).content
+        return page_source
+
+    def parse_account(self, content):
+        bsObj = BeautifulSoup(
+            str(content, encoding="utf-8"), "html.parser")
+        
+    def run(self):
+        while True:
+            #从队列中获取一个待爬取url
+            current_url = r.blpop(self.url_key, timeout=2)
+            if (req_count >= 20):
+                #随机从池子中选取一个cookie和代理
+                self.current_cookie = self.cookie_pool[1]
+                self.current_proxy = self.proxy_pool[1]
+            content = self.get_page_source(current_url)
+            req_count += 1
+            #每爬取一个页面，停10s
+            time.sleep(10)
 
 class ArticlesDownloader:
     pass
 
 
 def main(keys):
-    pool = cookie_pool.CookiesPool()
-    i = 0
-    while i < 2:
-        pool.genCookie()
-        i += 1
-    spider = WXAccountsSpider(keys, pool.get_one_cookie())  # 暂时只使用一个spider
+    pool1 = cookie_pool.get_n_cookies(2)
+    pool2 = ip_pool.get_proxy_list()#获取可用代理列表
+    spider = WXAccountsSpider(keys, pool[0])  # 暂时只使用一个spider
     spider.run()
+    downloader = AccountsDownloader()
+    
 
 
 if __name__ == "__main__":
-    key_list = ["女性", "美妆", "时尚", "女性健康", "穿搭", "星座"]
+    key_list = ["女性", "美妆", "时尚", "女性健康", "穿搭", "星座"， "少女"， "穿衣"， "fashion"]
     main(key_list)

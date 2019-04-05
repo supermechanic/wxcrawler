@@ -5,8 +5,7 @@ import multiprocessing
 from multiprocessing import Queue, Pool
 
 
-def get_all_proxy(queue):
-    url = 'http://www.xicidaili.com/nn/1'
+def get_all_proxy(queue, url):
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36',
@@ -91,7 +90,7 @@ def get_proxy_list():
     pool.join()
     p.join()
     print(res_true_proxy)
-
+    return res_true_proxy
 
 if __name__ == '__main__':
     # 定义一个开始时间
