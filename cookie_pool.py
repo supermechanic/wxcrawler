@@ -12,10 +12,14 @@ def get_cookie():  # 获取cookie
         cookie[items.get('name')] = items.get('value')
     return cookie
 
-def get_n_cookies(n):
+def get_n_cookies(n = 1):
     cookie_list = list()
     for i in range(n):
-        print("第"+i+"个")
+        print(i)
         cookie = get_cookie()
         cookie_list.append(cookie)
     return cookie_list
+
+if __name__ == "__main__":
+    cookies=get_n_cookies(2)
+    print(cookies)

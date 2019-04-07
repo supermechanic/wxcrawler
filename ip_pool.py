@@ -5,11 +5,12 @@ import multiprocessing
 from multiprocessing import Queue, Pool
 
 
-def get_all_proxy(queue, url):
+def get_all_proxy(queue):
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36',
     }
+    url = "http://www.xicidaili.com/wn"
     response = requests.get(url, headers=headers)
 
     # 找到我们需要的ip和post
