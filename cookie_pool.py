@@ -1,5 +1,5 @@
-from selenium import webdriver
 import time
+from selenium import webdriver
 def get_cookie():  # 获取cookie
     chrome_obj = webdriver.Chrome()
     chrome_obj.get("http://weixin.sogou.com/")
