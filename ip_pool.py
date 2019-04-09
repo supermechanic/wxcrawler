@@ -86,13 +86,17 @@ def get_proxy_list():
     # 获取所有能用的proxy
     for proxy in proxy_lists:
         res = proxy.get()
+        proxyies = {
+            'https': res
+        }
         if res:
-            res_true_proxy.append(res)
+            res_true_proxy.append(proxyies)
     pool.close()
     pool.join()
     p.join()
     print(res_true_proxy)
     return res_true_proxy
+
 
 if __name__ == '__main__':
     # 定义一个开始时间

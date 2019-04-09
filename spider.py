@@ -58,6 +58,7 @@ class WXAccountsSpider:
             url, cookies=self.cookies[self.current_cookie_index], proxies=self.proxies[self.current_proxy_index], headers=header)
         if response.status_code == 200:
             print("REQUEST OK!")
+            print(response)
             page_source = response.content
         elif response.status_code == 302:
             # TODO 需要弹出验证码页面，并更新cookie

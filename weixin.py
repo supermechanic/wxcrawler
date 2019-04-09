@@ -131,6 +131,25 @@ class AccountsDownloader:
                 0, len(self.cookie_pool)-1)]
             return None
 
+    def parse_account_detail(self, account):
+        param = {
+            'type': 1,
+            'key': account.wxid
+        }
+        url = 'http://data.xiguaji.com/Search/SearchAct/?' + \
+            parse.urlencode(param)
+        response = requests.get(url, cookies=self.current_cookie,
+                                proxies=self.current_proxy, headers=header)
+        if response.status_code == 200:
+            page_source = response.content
+        bsObj = BeautifulSoup(
+            str(page_source, encoding="utf-8"), "html.parser")
+        div = bsObj.find("ul", {"class": "number-describe-index clearfix"})
+        info = div.find_all("span")
+        account.fans_num = info[0]
+        for item in info:
+            print(item)
+
     def parse_account(self, content):
         print(content)
         bsObj = BeautifulSoup(
@@ -176,15 +195,10 @@ class ArticlesDownloader:
 def main(keys):
     pool1 = [{'ppmdig': '15546432140000004a323c0d54f5b27b9291b4d9aa1eeb9b', 'sgid': '28-34275857-AVypibQ5pCBA6dibsNpz5VYicY', 'pprdig': 'ULVGPvRrTCpePR9H_ZT2eXO-TgSfMbaGnSPi-pMqwVGw20-UlJUZUZrCMyIXoRxOlohZUnd0vm6cUeP9zcGZEkYf5kMAHCcgMqmrWvRc2miS52jmVKogFlc9cRWF-6vuYGELwqbNjdLIOZnYJuC-gGgmbhKokDIm-b0wPJyf9_A', 'ppinf': '5|1554643214|1555852814|dHJ1c3Q6MToxfGNsaWVudGlkOjQ6MjAxN3x1bmlxbmFtZToyNzolRTYlOUMlQkElRTYlQTIlQjAlRTUlQjglODh8Y3J0OjEwOjE1NTQ2NDMyMTR8cmVmbmljazoyNzolRTYlOUMlQkElRTYlQTIlQjAlRTUlQjglODh8dXNlcmlkOjQ0Om85dDJsdUdQeEx0dk92U1pBVG5xVjNvYk9tOG9Ad2VpeGluLnNvaHUuY29tfA', 'SUV': '0077EACF7B7434015CA9F90AB923A772', 'SUID': '0134747B4631990A000000005CA9F907', 'weixinIndexVisited': '1', 'IPLOC': 'CN1100', 'ABTEST': '8|1554643207|v1'},
              {'ppmdig': '15546432320000005f548f95c22a3584bb8b8d5d21e43308', 'sgid': '14-39976631-AVypibSBPgUZvMiaor5czcuM0', 'pprdig': 'ZAQAppVJb8iW4aLX1isiM9B5OHrOGeQzxtxKjHFneAG4Z7oc0S6Vbp3iOk_qHSaA0PqC5RrRPlKeHrpGT3yfWOFqarTX-RzeMW6kqdSb7XztzHy7_HQvPFLkbtPuenRWxDN2M3n0ed2Rdcj2wGFT3jhBFzdPXSpSVwkhnZ4ZKwE', 'ppinf': '5|1554643232|1555852832|dHJ1c3Q6MToxfGNsaWVudGlkOjQ6MjAxN3x1bmlxbmFtZToxODolRTQlQjglQkUlRTQlQjglQUF8Y3J0OjEwOjE1NTQ2NDMyMzJ8cmVmbmljazoxODolRTQlQjglQkUlRTQlQjglQUF8dXNlcmlkOjQ0Om85dDJsdUtmNjJWLXNDU01rNjJMaFZkS1hoWGNAd2VpeGluLnNvaHUuY29tfA', 'SUV': '00B9EAD57B7434015CA9F91CBA0A7716', 'SUID': '0134747B4631990A000000005CA9F91A', 'weixinIndexVisited': '1', 'IPLOC': 'CN1100', 'ABTEST': '6|1554643226|v1'}]
-    pool2 = [{'https': 'http://61.178.149.237:59042'},
-             {'https': 'http://163.125.66.161:9797'},
-             {'https': 'http://163.125.66.217:9797'},
-             {'https': 'http://180.141.90.172:53281'},
-             {'https': 'http://124.237.83.14:53281'},
-             {'https': 'http://114.119.116.92:61066'},
-             {'https': 'http://116.209.58.237:9999'},
-             {'https': 'http://110.52.235.170:9999'},
-             {'https': 'http://110.52.235.117:9999'}]
+    pool2 = [{'https': 'http://116.209.56.122:9999'}, {'https': 'http://163.125.66.217:9797'},
+             {'https': 'http://117.114.149.66:53281'}, {'https': 'http://180.141.90.172:53281'},
+             {'https': 'http://124.237.83.14:53281'}, {'https': 'http://111.177.177.166:9999'},
+             {'https': 'http://58.240.220.86:53281'}]
     wxspider = spider.WXAccountsSpider(
         keys, pool1, pool2)  # 暂时只使用一个spider
     wxspider.run()
@@ -193,5 +207,6 @@ def main(keys):
 
 
 if __name__ == "__main__":
-    key_list = ["女性", "时尚", "女性健康", "星座", "少女", "穿衣", "fashion"]
+    key = input("请输入关键词")
+    key_list = [key]
     main(key_list)
