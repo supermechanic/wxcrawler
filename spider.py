@@ -52,10 +52,11 @@ class WXAccountsSpider:
         r.lpush(self.urlListKey, url)
         WXAccountsSpider.urlCount += 1
         return url
+# proxies=self.proxies[self.current_proxy_index],
 
     def getTotalPage(self, url):
         response = requests.get(
-            url, cookies=self.cookies[self.current_cookie_index], proxies=self.proxies[self.current_proxy_index], headers=header)
+            url, cookies=self.cookies[self.current_cookie_index], headers=header)
         if response.status_code == 200:
             print("REQUEST OK!")
             print(response)
@@ -64,7 +65,7 @@ class WXAccountsSpider:
             # TODO 需要弹出验证码页面，并更新cookie
             self.current_cookie_index = (
                 self.current_cookie_index + 1) % len(self.cookies)
-
+            return 1
         else:
             print('切换cookie')
             self.current_cookie_index = (
@@ -74,8 +75,11 @@ class WXAccountsSpider:
             str(page_source, encoding="utf-8"), "html.parser")
         # print(bsObj)
         if(bsObj == None):
-            return 0
-        itemCountText = bsObj.find("div", {"class": "mun"}).text
+            return 1
+        itemCountobj = bsObj.find("div", {"class": "mun"})
+        if itemCountobj == None:
+            return 1
+        itemCountText = itemCountobj.text
         pattern = re.compile(r'\d+')
         itemCount = pattern.findall(itemCountText.replace(",", ""))[0]
         pageCount = int(int(itemCount)/10) + 1

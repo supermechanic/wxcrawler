@@ -26,18 +26,20 @@ r = redis_conn.getRedisConn()
 
 
 class WXAccount:
-    def __init__(self, wxid='', wxname='', authName='', description=''):
+    def __init__(self, wxid='', wxname='', authName='', description='', fans_num=0):
         self.wxid = wxid  # 微信id
         self.wxname = wxname  # 微信名
         self.authName = authName  # 认证名称，多为公司名
         self.description = description  # 公众号描述
+        self.fans_num = 0
 
     def toJson(self):
         jsondata = json.dumps({
             "wxid": self.wxid,
             "wxname": self.wxname,
             "authName": self.authName,
-            "description": self.description
+            "description": self.description,
+            "fans_num": self.fans_num
         }, indent=4)
         print(jsondata)
         return jsondata
@@ -49,7 +51,8 @@ class WXAccount:
     def save2csv(self):
         # 以逗号方式分割加换行符
         # temp = self.wxid+","+self.wxname +","+ self.authName +","+ self.description
-        row = [self.wxid, self.wxname, self.authName, self.description]
+        row = [self.wxid, self.wxname, self.authName,
+               self.description, self.fans_num]
         with open('data.csv', 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(row)
@@ -67,12 +70,14 @@ class AccountsDownloader:
     req_count = 0
     # 从redis读取url message queue
 
-    def __init__(self, cookie_pool, proxy_pool):
+    def __init__(self, cookie_pool, proxy_pool, xigua_cookie_pool):
         self.url_key = "urls"
         self.cookie_pool = cookie_pool
         self.proxy_pool = proxy_pool
+        self.xigua_cookie_pool = xigua_cookie_pool
         self.current_cookie = cookie_pool[0]
         self.current_proxy = proxy_pool[0]
+        self.current_xigua_cookie = xigua_cookie_pool[0]
 
     def unlock(self, antiurl):
         oldcookies = self.current_cookie
@@ -116,7 +121,7 @@ class AccountsDownloader:
     def get_page_source(self, url):
         print("正在请求的地址--"+url)
         response = requests.get(
-            url, cookies=self.current_cookie, proxies=self.current_proxy, headers=header)
+            url, cookies=self.current_cookie, headers=header)
         if response.status_code == 200:
             print("RESPONSE OK!")
             return response.content
@@ -134,14 +139,20 @@ class AccountsDownloader:
     def parse_account_detail(self, account):
         param = {
             'type': 1,
-            'key': account.wxid
+            'key': account.wxname
         }
         url = 'http://data.xiguaji.com/Search/SearchAct/?' + \
             parse.urlencode(param)
-        response = requests.get(url, cookies=self.current_cookie,
-                                proxies=self.current_proxy, headers=header)
+        print(url)
+        print(self.current_xigua_cookie)
+        response = requests.get(
+            url, cookies=self.current_xigua_cookie, headers=header)
         if response.status_code == 200:
+            print("Response OK!")
             page_source = response.content
+        else:
+            print(response)
+            return account
         bsObj = BeautifulSoup(
             str(page_source, encoding="utf-8"), "html.parser")
         div = bsObj.find("ul", {"class": "number-describe-index clearfix"})
@@ -149,6 +160,7 @@ class AccountsDownloader:
         account.fans_num = info[0]
         for item in info:
             print(item)
+        return account
 
     def parse_account(self, content):
         print(content)
@@ -159,6 +171,7 @@ class AccountsDownloader:
             id = child.find("label", {"name": "em_weixinhao"}).text
             name = child.find("a", {"uigs": re.compile("account_name_*")}).text
             account = WXAccount(wxid=id, wxname=name)
+            account = self.parse_account_detail(account)
             account.save2redis()
             account.save2csv()
             print(account)
@@ -199,14 +212,16 @@ def main(keys):
              {'https': 'http://117.114.149.66:53281'}, {'https': 'http://180.141.90.172:53281'},
              {'https': 'http://124.237.83.14:53281'}, {'https': 'http://111.177.177.166:9999'},
              {'https': 'http://58.240.220.86:53281'}]
+    pool3 = [{'Qs_pv_194035': '2660058087681631700%2C4445311524614843000', 'compareArray': '[]', 'mediav': '%7B%22eid%22%3A%22163230%22%2C%22ep%22%3A%22%22%2C%22vid%22%3A%22XhpV-p%2F)ZH%3AU%234K(8%247%3A%22%2C%22ctn%22%3A%22%22%7D', 'Qs_lvt_194035': '1555056344',
+              'XIGUADATA': 'UserId=96e7bdadc2a4b144&checksum=a5339b0bef43&XIGUADATALIMITID=f3635dda57d94b62b086703bad7de6f8', 'Hm_lpvt_91a409c98f787c8181d5bb8ee9c535ba': '1555056354', 'Hm_lvt_91a409c98f787c8181d5bb8ee9c535ba': '1555056344', 'ASP.NET_SessionId': 'dxti3prwu1m1o0rmvzhzwl0q'}]
     wxspider = spider.WXAccountsSpider(
         keys, pool1, pool2)  # 暂时只使用一个spider
     wxspider.run()
-    downloader = AccountsDownloader(pool1, pool2)
+    downloader = AccountsDownloader(pool1, pool2, pool3)
     downloader.run()
 
 
 if __name__ == "__main__":
-    key = input("请输入关键词")
+    key = input("请输入关键词:\n")
     key_list = [key]
     main(key_list)
